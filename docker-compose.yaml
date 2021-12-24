@@ -1,0 +1,46 @@
+version: '2.3'
+
+networks:
+    code-network:
+        driver: bridge
+
+
+services:
+
+  io_hat:
+    build: ./docker/io-hat
+    image: olab/io_hat
+    container_name: olab_io_hat
+    environment:
+      - TZ=Europe/Vilnius
+      - MQTT_HOST=tcp://mqtt.lo:1883
+      # - MQTT_HOST=tcp://192.168.1.21:1883 # B32
+    devices:
+        - /dev/gpiomem
+        - /dev/mem
+        - /dev/i2c-1
+    volumes:
+        - ./docker/io-hat/:/app/
+        - /home/pi/go/:/app/go/
+        # - /home/pi/go/src/:/app/go/src/
+    networks:
+      code-network:
+        aliases:
+          - io-hat.lo
+    command: bash -c "cd /app; go run apps/blink/*.go"
+    restart: always
+
+  mqtt:
+    image: eclipse-mosquitto:1.6
+    container_name: olab_mqtt
+    ports:
+      - "1883:1883" # dest:src
+      - "9001:9001" # dest:src
+    environment:
+      - TZ=Europe/Vilnius
+    networks:
+      code-network:
+        aliases:
+          - mqtt.lo
+    restart: always
+
